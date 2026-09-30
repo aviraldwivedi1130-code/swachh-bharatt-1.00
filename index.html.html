@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swachh Nagar - Nagar Nigam Smart Waste Management & Grievance Portal</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Leaflet CSS & JS for GIS Waste Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Chart.js CDN for Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Browser-based object recognition used by the reuse helper -->
+  <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+
+  <style>
+    :root {
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --secondary: #0284c7;
+      --accent: #f59e0b;
+      --danger: #ef4444;
+      --dark: #0f172a;
+    }
+    * {
+      transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .toast-slide-in {
+      animation: slideInDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes slideInDown {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .shutter-flash {
+      animation: flashAnim 0.3s ease-out;
+    }
+    @keyframes flashAnim {
+      0% { opacity: 0.9; }
+      100% { opacity: 0; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- ================= TOP MUNICIPAL BANNER & HEADER ================= -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+    <!-- Official Strip -->
+    <div class="bg-emerald-900 text-emerald-100 text-[11px] py-1 px-4 flex flex-wrap items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>Swachh Bharat Mission (Urban) &bull; Nagar Nigam Municipal Corporation Live Grievance Redressal</span>
+      </div>
+      <div class="flex items-center gap-4 text-emerald-200">
+        <span>Toll-Free Control Room: <a href="tel:18001805151" class="font-bold underline text-white">1800-180-5151</a></span>
+        <span class="hidden sm:inline">|</span>
+        <span class="hidden sm:inline">24x7 Live GPS Sanitation Fleet</span>
+      </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo -->
+        <div class="flex items-center gap-3 cursor-pointer" onclick="window.app.navigateTo('report')">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+            <i data-lucide="trash-2" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-extrabold text-lg tracking-tight text-slate-900">SWACHH NAGAR</span>
+              <span class="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">Live Portal</span>
+            </div>
+            <p class="text-[10px] text-slate-500 font-medium -mt-0.5">Municipal Waste Management with Live Camera & GPS</p>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs (Desktop) -->
+        <nav class="hidden lg:flex items-center gap-1">
+          <button data-view-target="report" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-all flex items-center gap-1.5">
+            <i data-lucide="camera" class="w-4 h-4 text-emerald-600"></i> 1. Report Waste
+          </button>
+          <button data-view-target="tracking" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-all flex items-center gap-1.5">
+            <i data-lucide="route" class="w-4 h-4"></i> 2. Track Complaint
+          </button>
+          <button data-view-target="officer" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-all flex items-center gap-1.5">
+            <i data-lucide="building-2" class="w-4 h-4"></i> 3. Nagar Nigam Desk
+          </button>
+          <button data-view-target="sweeper" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-all flex items-center gap-1.5">
+            <i data-lucide="truck" class="w-4 h-4"></i> 4. Sweeper Tasks
+          </button>
+          <button data-view-target="admin" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-all flex items-center gap-1.5">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i> 5. Admin Analytics
+          </button>
+          <button data-view-target="awareness" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-all flex items-center gap-1.5">
+            <i data-lucide="book-open-check" class="w-4 h-4"></i> 6. Waste Awareness
+          </button>
+          <button data-view-target="recycling" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-all flex items-center gap-1.5">
+            <i data-lucide="recycle" class="w-4 h-4"></i> 7. Recycling &amp; Reuse
+          </button>
+        </nav>
+
+        <!-- Right Side: Account and Navigation -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <div id="demoRoleWrapper" class="hidden flex items-center gap-1.5 bg-slate-100 rounded-xl p-1 border border-slate-200">
+            <label for="demoRoleSwitcher" class="text-[10px] uppercase font-bold text-slate-500 px-1">Demo role</label>
+            <select id="demoRoleSwitcher" class="text-xs font-semibold bg-transparent border-0 text-slate-800 focus:ring-0 cursor-pointer py-1" disabled>
+              <option value="citizen">Citizen</option>
+              <option value="sweeper">Sweeper</option>
+              <option value="officer">Officer</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div id="userMenuWrapper" class="flex items-center gap-2">
+            <button id="accountButton" type="button" onclick="Auth.openAuthModal()" class="px-3 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200 flex items-center gap-1.5">
+              <i data-lucide="user" class="w-4 h-4"></i><span>Sign in</span>
+            </button>
+          </div>
+
+          <!-- Mobile Hamburger -->
+          <button id="mobileMenuToggleBtn" class="lg:hidden p-2 text-slate-600 hover:text-slate-900 rounded-lg">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Drawer -->
+    <div id="mobileNavDrawer" class="hidden lg:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-1">
+      <button data-view-target="report" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2">
+        <i data-lucide="camera" class="w-4 h-4 text-emerald-600"></i> 1. Report Waste
+      </button>
+      <button data-view-target="tracking" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2">
+        <i data-lucide="route" class="w-4 h-4"></i> 2. Complaint Tracking & Feedback
+      </button>
+      <button data-view-target="officer" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2">
+        <i data-lucide="building-2" class="w-4 h-4"></i> 3. Local Nagar Nigam Desk
+      </button>
+      <button data-view-target="sweeper" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2">
+        <i data-lucide="truck" class="w-4 h-4"></i> 4. Sweeper Pickup Portal
+      </button>
+      <button data-view-target="admin" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> 5. Admin City Dashboard
+      </button>
+      <button data-view-target="awareness" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2">
+        <i data-lucide="book-open-check" class="w-4 h-4"></i> 6. Waste Awareness & Segregation
+      </button>
+      <button data-view-target="recycling" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2">
+        <i data-lucide="recycle" class="w-4 h-4"></i> 7. Recycling &amp; Reuse
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= ACTIVE ROLE CONTEXT BANNER ================= -->
+  <div class="bg-slate-900 text-slate-200 text-xs py-2 px-4 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div id="roleContextBanner" class="flex items-center gap-2"></div>
+      <div class="flex items-center gap-3 text-[11px] text-slate-400">
+        <span>Active User: <strong id="navUserName" class="text-emerald-400">Guest</strong></span>
+        <span>Role: <strong id="navUserRole" class="text-white">Not signed in</strong></span>
+        <button id="logoutBtn" class="hidden text-slate-400 hover:text-rose-400 underline">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MAIN VIEW CONTAINER ================= -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- VIEW 1: REPORT WASTE ISSUES -->
+    <section id="view-report" class="view-section">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Form Column (7 cols) -->
+        <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+            <div>
+              <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <i data-lucide="megaphone" class="w-6 h-6 text-emerald-600"></i>
+                Report Waste Issue
+              </h1>
+              <p class="text-xs sm:text-sm text-slate-500 mt-1">
+                Take a <strong>Live Photo</strong> & lock <strong>Live GPS Location</strong> to dispatch local Nagar Nigam sweepers instantly.
+              </p>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hidden sm:inline-block">
+              24-Hour SLA
+            </span>
+          </div>
+
+          <form id="reportWasteForm" class="space-y-5">
+            <!-- 1. Waste Issue Category -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                1. Type of Waste Issue <span class="text-rose-500">*</span>
+              </label>
+              <select id="reportWasteType" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-xs">
+                <option value="Overflowing Community Dustbin">Overflowing Community Dustbin / Green Bin</option>
+                <option value="Illegal Roadside Garbage Dump">Illegal Roadside Garbage Dump</option>
+                <option value="Dead Animal Carcass / Biohazard">Dead Animal Carcass / Biohazard Waste</option>
+                <option value="Plastic & Electronic Waste Dump">Plastic & Electronic Waste Dump</option>
+                <option value="Construction & Demolition Debris">Construction & Demolition Debris (Malba)</option>
+                <option value="Blocked Drain with Floating Waste">Blocked Open Drain with Floating Waste</option>
+                <option value="Uncollected Door-to-Door Household Waste">Uncollected Door-to-Door Household Waste</option>
+              </select>
+            </div>
+
+            <!-- 2. Ward & Local Nagar Nigam Routing -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  2. Select Local Area / Nagar Nigam Ward <span class="text-rose-500">*</span>
+                </label>
+                <span class="text-[11px] text-emerald-600 font-semibold">Auto-Routes to Ward Desk</span>
+              </div>
+              <select id="reportWard" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-xs"></select>
+              <div id="wardNagarNigamCard" class="mt-2.5"></div>
+            </div>
+
+            <!-- 3. Severity Level -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                3. Severity / Urgency Level
+              </label>
+              <div class="grid grid-cols-3 gap-2.5">
+                <label class="cursor-pointer border border-slate-200 rounded-xl p-2.5 text-center hover:bg-slate-50 has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50/50 has-[:checked]:text-emerald-900 transition-all">
+                  <input type="radio" name="severity" value="Low" class="hidden" />
+                  <span class="block text-xs font-bold">Low</span>
+                  <span class="text-[10px] text-slate-500">Minor littering</span>
+                </label>
+                <label class="cursor-pointer border border-slate-200 rounded-xl p-2.5 text-center hover:bg-slate-50 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50/50 has-[:checked]:text-amber-900 transition-all">
+                  <input type="radio" name="severity" value="Medium" checked class="hidden" />
+                  <span class="block text-xs font-bold">Medium</span>
+                  <span class="text-[10px] text-slate-500">Piled up waste</span>
+                </label>
+                <label class="cursor-pointer border border-slate-200 rounded-xl p-2.5 text-center hover:bg-slate-50 has-[:checked]:border-rose-600 has-[:checked]:bg-rose-50/50 has-[:checked]:text-rose-900 transition-all">
+                  <input type="radio" name="severity" value="High" class="hidden" />
+                  <span class="block text-xs font-bold">High / Urgent</span>
+                  <span class="text-[10px] text-slate-500">Foul odor / Hazard</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 4. Location & Address with LIVE GPS -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  4. Exact Street Address & Landmark <span class="text-rose-500">*</span>
+                </label>
+                <button type="button" id="detectLocationBtn" onclick="fetchRealGpsLocation()" class="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs">
+                  <i data-lucide="crosshair" class="w-3.5 h-3.5 text-emerald-700"></i>
+                  <span>📍 Get Live GPS Location</span>
+                </button>
+              </div>
+
+              <div id="liveGpsStatus" class="hidden mb-2"></div>
+
+              <input type="text" id="reportAddress" required readonly placeholder="Waiting for GPS permission…"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-xs sm:text-sm font-medium text-slate-800 mb-2" />
+              <p class="text-[11px] text-slate-500">Address and coordinates are filled from your device GPS.</p>
+              <input type="hidden" id="reportLat" value="" />
+              <input type="hidden" id="reportLng" value="" />
+            </div>
+
+            <!-- 5. Photo Upload with LIVE CAMERA -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  5. Photo Proof of Waste <span class="text-rose-500">*</span>
+                </label>
+                <button type="button" onclick="openLiveCamera('citizen')" class="px-2.5 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-lg text-xs font-bold flex items-center gap-1 transition-all shadow-xs">
+                  <i data-lucide="camera" class="w-3.5 h-3.5 text-rose-600"></i>
+                  <span>📸 Open Live Camera</span>
+                </button>
+              </div>
+
+              <div class="border-2 border-dashed border-slate-200 hover:border-emerald-400 rounded-2xl p-4 text-center bg-slate-50/50 hover:bg-emerald-50/30 transition-all relative">
+                <div id="photoUploadPrompt" class="space-y-2 py-2">
+                  <div class="flex items-center justify-center gap-3">
+                    <button type="button" onclick="openLiveCamera('citizen')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5">
+                      <i data-lucide="camera" class="w-4 h-4"></i> Take Live Photo
+                    </button>
+                  </div>
+                  <p class="text-[10px] text-slate-400">Camera capture only. File uploads and demo photos are disabled.</p>
+                </div>
+
+                <div id="photoPreviewContainer" class="hidden relative">
+                  <img id="photoPreviewImg" src="" alt="Waste Preview" class="w-full h-48 object-cover rounded-xl border border-slate-200 shadow-sm" />
+                  <button type="button" onclick="Complaints.clearPhotoPreview()" 
+                    class="absolute top-2 right-2 p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full shadow-md transition-all" title="Remove Photo">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                  </button>
+                  <span class="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-black/70 text-white text-[10px] backdrop-blur-xs font-bold flex items-center gap-1">
+                    <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i> Photo Attached
+                  </span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- 6. Grievance Description -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                6. Grievance Details / Description <span class="text-rose-500">*</span>
+              </label>
+              <textarea id="reportDescription" rows="3" required placeholder="Describe the waste situation, accumulation period, or health hazards..."
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-xs"></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-md shadow-emerald-600/30 hover:shadow-lg transition-all flex items-center justify-center gap-2">
+              <i data-lucide="send" class="w-4 h-4"></i> Submit Waste Grievance to Nagar Nigam
+            </button>
+          </form>
+        </div>
+
+        <!-- Right: Information & Workflow Sidebar (5 cols) -->
+        <div class="lg:col-span-5 space-y-6">
+          <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-5 shadow-sm space-y-2">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-emerald-100">
+              Live Hardware Integration Active
+            </span>
+            <h3 class="text-sm font-bold">Live Camera & GPS Enabled</h3>
+            <p class="text-xs text-emerald-100 leading-relaxed">
+              Snap real live photos directly through your phone/laptop webcam with GPS satellite reverse-geocoding into municipal ward maps.
+            </p>
+          </div>
+
+          <div class="bg-gradient-to-br from-slate-900 to-emerald-950 text-white rounded-2xl p-6 shadow-sm border border-slate-800">
+            <h2 class="text-base font-bold flex items-center gap-2 text-emerald-400">
+              <i data-lucide="git-branch" class="w-5 h-5"></i>
+              How Your Complaint Is Handled
+            </h2>
+            <p class="text-xs text-slate-300 mt-1">Under Nagar Nigam Civic Charter & Swachh Directives</p>
+
+            <div class="mt-5 space-y-4 text-xs">
+              <div class="flex items-start gap-3">
+                <span class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center flex-shrink-0 text-xs border border-emerald-500/40">1</span>
+                <div>
+                  <h4 class="font-bold text-white">Citizen Submits Live Report</h4>
+                  <p class="text-slate-300 text-[11px] mt-0.5">Captures photo, category, and GPS coordinates with a unique Ticket ID.</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center flex-shrink-0 text-xs border border-emerald-500/40">2</span>
+                <div>
+                  <h4 class="font-bold text-white">Direct Routing to Nagar Nigam Desk</h4>
+                  <p class="text-slate-300 text-[11px] mt-0.5">Assigned to the local Zonal Sanitary Officer based on the selected ward.</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center flex-shrink-0 text-xs border border-emerald-500/40">3</span>
+                <div>
+                  <h4 class="font-bold text-white">Nagar Nigam Instructs Sweeper</h4>
+                  <p class="text-slate-300 text-[11px] mt-0.5">Officer gives specific instructions and dispatches a sweeper crew with a tipper truck.</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center flex-shrink-0 text-xs border border-emerald-500/40">4</span>
+                <div>
+                  <h4 class="font-bold text-white">Resolution Proof & Citizen Rating</h4>
+                  <p class="text-slate-300 text-[11px] mt-0.5">Sweeper uploads "After Cleaning" photo. Citizen tracks status & rates resolution.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- VIEW 2: COMPLAINT TRACKING & FEEDBACK -->
+    <section id="view-tracking" class="view-section hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div class="lg:col-span-4 space-y-4">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <i data-lucide="search" class="w-4 h-4 text-emerald-600"></i> Track Complaint Status
+            </h2>
+            <form id="trackingSearchForm" class="space-y-3">
+              <div class="relative">
+                <input type="text" id="trackingSearchInput" placeholder="Enter Complaint ID (e.g. NN-2026-8492)"
+                  class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-mono font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-xs uppercase" />
+                <i data-lucide="hash" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+              </div>
+              <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5">
+                <i data-lucide="route" class="w-4 h-4"></i> Track Grievance
+              </button>
+            </form>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Recent Grievance Tickets</h3>
+              <span class="text-[10px] text-slate-400">Click to load</span>
+            </div>
+            <div id="recentTrackingCards" class="space-y-2"></div>
+          </div>
+        </div>
+        <div class="lg:col-span-8">
+          <div id="trackingDetailContainer"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: NAGAR NIGAM DESK -->
+    <section id="view-officer" class="view-section hidden">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+              <i data-lucide="building-2" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <h1 class="text-xl font-black text-slate-900 tracking-tight">Nagar Nigam Ward Officer Dispatch Desk</h1>
+              <p class="text-xs text-slate-500 mt-0.5">Review citizen reports, issue municipal instructions, and dispatch sanitation sweepers</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <select id="filterOfficerWard" onchange="Complaints.renderOfficerComplaintsTable()"
+              class="px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-white text-slate-700 focus:ring-1 focus:ring-emerald-500">
+              <option value="all">All Nagar Nigam Wards</option>
+            </select>
+            <select id="filterOfficerStatus" onchange="Complaints.renderOfficerComplaintsTable()"
+              class="px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-white text-slate-700 focus:ring-1 focus:ring-emerald-500">
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending Verification</option>
+              <option value="dispatched">Sweeper Dispatched</option>
+              <option value="resolved">Resolved</option>
+            </select>
+          </div>
+        </div>
+        <div class="overflow-x-auto mt-4">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200 bg-slate-50/50">
+                <th class="py-3 px-4">Ticket ID</th>
+                <th class="py-3 px-4">Waste Issue</th>
+                <th class="py-3 px-4">Ward / Reporter</th>
+                <th class="py-3 px-4">Severity</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4">Assigned Sweeper</th>
+                <th class="py-3 px-4 text-right">Officer Action</th>
+              </tr>
+            </thead>
+            <tbody id="officerComplaintsTableBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 4: SWEEPER TASKS -->
+    <section id="view-sweeper" class="view-section hidden">
+      <div class="max-w-4xl mx-auto space-y-6">
+        <div class="bg-gradient-to-r from-emerald-800 to-teal-700 text-white rounded-2xl p-6 shadow-sm flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-emerald-200 border border-white/20">
+              <i data-lucide="truck" class="w-7 h-7"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-xl font-bold">Sanitation Crew Pickup Terminal</h1>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400 text-emerald-950 uppercase">Active Duty</span>
+              </div>
+              <p class="text-xs text-emerald-100 mt-1">Logged In: <strong>Ramesh Kumar</strong> &bull; Vehicle: <strong>Auto Tipper (UP-32-BW-4821)</strong> &bull; Ward 4</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-emerald-200 block">Duty Shift</span>
+            <span class="text-sm font-bold text-white">06:00 AM - 02:00 PM</span>
+          </div>
+        </div>
+        <div>
+          <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <i data-lucide="clipboard-list" class="w-4 h-4 text-emerald-600"></i> Assigned Waste Pickup Requests
+          </h2>
+          <div id="sweeperTasksContainer" class="space-y-4"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 5: ADMIN DASHBOARD & GIS MAP -->
+    <section id="view-admin" class="view-section hidden space-y-6">
+      <div id="adminAccessNotice" class="hidden rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="status"></div>
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+            <i data-lucide="layout-dashboard" class="w-6 h-6 text-emerald-600"></i> Municipal Commissioner & Admin Dashboard
+          </h1>
+          <p class="text-xs text-slate-500 mt-0.5">Real-time waste monitoring, GIS heatmap, workforce dispatch, and SLA analytics</p>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <button id="exportReportBtn" class="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs shadow-xs transition-all flex items-center gap-1.5">
+            <i data-lucide="download" class="w-4 h-4"></i> Export CSV Report
+          </button>
+          <button id="btnResetDemoData" class="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-all flex items-center gap-1">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset Demo Data
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Total Lodged</span>
+          <span id="kpiTotalComplaints" class="text-2xl font-black text-slate-900 mt-1 block">0</span>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Resolved</span>
+          <span id="kpiResolvedComplaints" class="text-2xl font-black text-emerald-600 mt-1 block">0</span>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Dispatched</span>
+          <span id="kpiInProgressComplaints" class="text-2xl font-black text-sky-600 mt-1 block">0</span>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Pending</span>
+          <span id="kpiPendingComplaints" class="text-2xl font-black text-rose-500 mt-1 block">0</span>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Weight Recorded</span>
+          <span id="kpiWasteTons" class="text-2xl font-black text-teal-600 mt-1 block">—</span>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Citizen Rating</span>
+          <span id="kpiSatisfactionRating" class="text-2xl font-black text-amber-500 mt-1 block">N/A</span>
+        </div>
+      </div>
+
+      <!-- GIS Map & Charts -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-2">
+            <i data-lucide="map" class="w-4 h-4 text-emerald-600"></i> Live GIS Waste Grievance Map
+          </h3>
+          <div id="adminGisMap" class="w-full h-80 sm:h-96 rounded-xl border border-slate-200 overflow-hidden z-10"></div>
+        </div>
+        <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col">
+          <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-2">
+            <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-600"></i> Resolution Ratio
+          </h3>
+          <div class="flex-1 min-h-[220px] relative flex items-center justify-center">
+            <canvas id="statusDoughnutChart"></canvas>
+            <p id="adminChartEmpty" class="hidden absolute text-xs text-slate-500 pointer-events-none">No complaint data yet.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 6: AWARENESS & SMART CLASSIFIER -->
+    <section id="view-awareness" class="view-section hidden space-y-6">
+      <div class="bg-gradient-to-r from-emerald-900 to-teal-900 text-white rounded-3xl p-8 sm:p-10 shadow-lg relative overflow-hidden">
+        <div class="relative z-10 max-w-2xl">
+          <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
+            Swachh Citizen Awareness Portal
+          </span>
+          <h1 class="text-2xl sm:text-4xl font-black mt-3 tracking-tight">Source Segregation is Every Citizen's Responsibility</h1>
+          <p class="text-xs sm:text-sm text-emerald-100 mt-2 leading-relaxed">
+            By segregating your household waste into Wet, Dry, and Hazardous bins, you help 10,000+ Nagar Nigam sanitation workers stay safe and turn organic waste into clean compost.
+          </p>
+        </div>
+      </div>
+
+      <!-- Interactive "Which Bin Does It Belong To?" Classifier -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+        <div class="max-w-2xl">
+          <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="search-check" class="w-5 h-5 text-emerald-600"></i> "Which Bin Does It Belong To?" Smart Classifier
+          </h3>
+          <p class="text-xs text-slate-500 mt-1">Type any household item below to discover which bin to use:</p>
+          <div class="mt-4 relative">
+            <input type="text" id="wasteItemSearch" placeholder="Type an item (e.g. Pizza Box, Milk Pouch, Battery, Broken Glass)..."
+              class="w-full px-4 py-3 pl-10 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-xs" />
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
+          </div>
+          <button id="wasteItemSearchBtn" type="button" class="mt-3 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">Find the right bin</button>
+          <div class="mt-4 flex flex-wrap gap-2" aria-label="Example items">
+            <button type="button" data-waste-example="banana peel" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 text-xs text-slate-700">Banana peel</button>
+            <button type="button" data-waste-example="newspaper" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 text-xs text-slate-700">Newspaper</button>
+            <button type="button" data-waste-example="plastic bottle" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 text-xs text-slate-700">Plastic bottle</button>
+            <button type="button" data-waste-example="battery" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 text-xs text-slate-700">Battery</button>
+            <button type="button" data-waste-example="diaper" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 text-xs text-slate-700">Diaper</button>
+            <button type="button" data-waste-example="broken glass" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 text-xs text-slate-700">Broken glass</button>
+          </div>
+          <div id="wasteLookupResult" class="hidden mt-4"></div>
+          <p class="text-[10px] text-slate-400 mt-3">Basic wet, dry and domestic hazardous groupings follow the <a class="underline text-emerald-700" href="https://swachhbharaturban.gov.in/writereaddata/Manual.pdf" target="_blank" rel="noopener noreferrer">Government of India municipal waste management manual</a>. Your local collection rules take priority.</p>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- VIEW 7: RECYCLING & REUSE -->
+    <section id="view-recycling" class="view-section hidden space-y-6">
+      <div class="bg-gradient-to-r from-teal-900 via-emerald-900 to-green-800 text-white rounded-3xl p-8 sm:p-10 shadow-lg">
+        <div class="max-w-3xl">
+          <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-emerald-100 border border-white/20 uppercase tracking-wider">From collection to useful material</span>
+          <h1 class="text-2xl sm:text-4xl font-black mt-3 tracking-tight">Where does collected waste go?</h1>
+          <p class="text-sm text-emerald-50 mt-3 leading-relaxed">Collected waste is sorted by material and condition. Clean, separated material can become a resource; contaminated or hazardous waste needs safe, approved treatment.</p>
+        </div>
+      </div>
+      <section class="bg-white rounded-2xl border border-emerald-100 p-5 sm:p-6 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-black text-slate-900 flex items-center gap-2"><i data-lucide="scan-search" class="w-5 h-5 text-emerald-600"></i> Reuse ideas for a reported waste photo</h2>
+            <p class="text-xs text-slate-500 mt-1">Choose a report from page 1 to see its attached photo and get an object-based reuse suggestion.</p>
+          </div>
+          <div class="flex flex-wrap gap-2 items-center">
+            <label for="reuseComplaintSelect" class="sr-only">Select a waste report</label>
+            <select id="reuseComplaintSelect" class="max-w-xs px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-700"></select>
+            <button id="analyzeReportedPhotoBtn" type="button" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-2"><i data-lucide="scan-search" class="w-4 h-4"></i> Suggest reuse</button>
+          </div>
+        </div>
+        <p class="text-[10px] text-slate-400 mt-3">This uses the photo attached to the selected report. The detector recognizes common everyday objects, not waste material or recyclability. Model files download when first used. Confirm the material and condition yourself; a detected bottle is a flower-pot candidate only if it is a clean plastic bottle.</p>
+        <div id="reuseDetectionStatus" class="hidden mt-4 rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600" role="status" aria-live="polite"></div>
+        <img id="reuseDetectionPreview" class="hidden mt-4 max-h-72 rounded-xl border border-slate-200 object-contain" alt="Waste report photo selected for reuse suggestions">
+        <div id="reuseDetectionResult" class="hidden mt-4"></div>
+      </section>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <article class="bg-white rounded-2xl border border-emerald-100 p-5 shadow-sm"><div class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center"><i data-lucide="leaf" class="w-5 h-5"></i></div><h2 class="font-bold text-slate-900 mt-4">Food and garden waste</h2><p class="text-sm text-slate-600 mt-2">Separated organic waste can be composted into soil conditioner or processed in a suitable biogas plant to produce biogas and digestate.</p><p class="text-xs text-emerald-800 bg-emerald-50 rounded-lg p-3 mt-3"><strong>Examples:</strong> fruit and vegetable scraps, leaves, grass clippings.</p></article>
+        <article class="bg-white rounded-2xl border border-sky-100 p-5 shadow-sm"><div class="w-11 h-11 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center"><i data-lucide="package-check" class="w-5 h-5"></i></div><h2 class="font-bold text-slate-900 mt-4">Paper, cardboard, glass and metals</h2><p class="text-sm text-slate-600 mt-2">Sorted recyclable materials go to material recovery and recycling facilities, where they can become new paper products, glass items or metal products.</p><p class="text-xs text-sky-800 bg-sky-50 rounded-lg p-3 mt-3"><strong>Best step:</strong> keep recyclables dry and separate from food waste.</p></article>
+        <article class="bg-white rounded-2xl border border-indigo-100 p-5 shadow-sm"><div class="w-11 h-11 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center"><i data-lucide="recycle" class="w-5 h-5"></i></div><h2 class="font-bold text-slate-900 mt-4">Plastic</h2><p class="text-sm text-slate-600 mt-2">Accepted plastic is sorted by type, cleaned and reprocessed into flakes or pellets for new products. Some mixed or soiled plastics may not be recyclable locally.</p><p class="text-xs text-indigo-800 bg-indigo-50 rounded-lg p-3 mt-3"><strong>Examples:</strong> bottles, containers and packaging accepted by local facilities.</p></article>
+        <article class="bg-white rounded-2xl border border-amber-100 p-5 shadow-sm"><div class="w-11 h-11 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center"><i data-lucide="construction" class="w-5 h-5"></i></div><h2 class="font-bold text-slate-900 mt-4">Construction and demolition debris</h2><p class="text-sm text-slate-600 mt-2">Concrete, brick and rubble can be crushed and screened for approved road base, blocks or other construction uses. Reuse depends on quality and local standards.</p><p class="text-xs text-amber-800 bg-amber-50 rounded-lg p-3 mt-3"><strong>Keep separate:</strong> do not mix rubble with household garbage.</p></article>
+        <article class="bg-white rounded-2xl border border-violet-100 p-5 shadow-sm"><div class="w-11 h-11 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center"><i data-lucide="cpu" class="w-5 h-5"></i></div><h2 class="font-bold text-slate-900 mt-4">Electronic and battery waste</h2><p class="text-sm text-slate-600 mt-2">Electronics and batteries should go to designated collection points or authorized handlers, who recover useful materials and manage hazardous parts safely.</p><p class="text-xs text-violet-800 bg-violet-50 rounded-lg p-3 mt-3"><strong>Do not:</strong> put batteries or electronics in regular street bins.</p></article>
+        <article class="bg-white rounded-2xl border border-rose-100 p-5 shadow-sm"><div class="w-11 h-11 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center"><i data-lucide="shield-alert" class="w-5 h-5"></i></div><h2 class="font-bold text-slate-900 mt-4">Hazardous or biomedical waste</h2><p class="text-sm text-slate-600 mt-2">These materials need separate handling and treatment through the appropriate authorized service. They must not be mixed with ordinary recyclables or compost.</p><p class="text-xs text-rose-800 bg-rose-50 rounded-lg p-3 mt-3"><strong>Examples:</strong> sharps, chemicals, certain medical waste and unknown hazardous items.</p></article>
+      </div>
+      <div class="bg-slate-900 text-white rounded-2xl p-5 sm:p-6"><h2 class="font-bold flex items-center gap-2"><i data-lucide="info" class="w-5 h-5 text-emerald-400"></i> Local processing can vary</h2><p class="text-sm text-slate-300 mt-2 leading-relaxed">These are common waste pathways, not a guarantee that every item is recycled. The actual destination depends on local collection, sorting capacity, material condition and authorized facilities. Keep waste separated and follow your Nagar Nigam's collection instructions.</p></div>
+    </section>
+
+  </main>
+
+  <!-- MODALS -->
+  <!-- Sign-in and registration modal -->
+  <div id="authModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 relative">
+      <button type="button" id="authCloseBtn" class="absolute top-3 right-3 p-2 rounded-lg text-slate-500 hover:bg-slate-100" aria-label="Close sign in dialog"><i data-lucide="x" class="w-4 h-4"></i></button>
+      <h2 id="authModalTitle" class="text-xl font-black text-slate-900">Sign in</h2>
+      <p class="text-xs text-slate-500 mt-1">Use your account to submit and manage reports.</p>
+      <div class="mt-4 flex gap-2 border-b border-slate-200 pb-3">
+        <button type="button" id="authShowLogin" class="px-3 py-1.5 rounded-lg text-xs font-bold">Sign in</button>
+        <button type="button" id="authShowRegister" class="px-3 py-1.5 rounded-lg text-xs font-bold">Create account</button>
+      </div>
+      <p id="authMessage" class="hidden mt-3 rounded-lg p-3 text-xs" role="status" aria-live="polite"></p>
+      <form id="loginForm" class="mt-4 space-y-3">
+        <label class="block text-xs font-semibold text-slate-700">Email<input id="loginEmail" type="email" autocomplete="username" required class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm"></label>
+        <label class="block text-xs font-semibold text-slate-700">Password<input id="loginPassword" type="password" autocomplete="current-password" required class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm"></label>
+        <button type="submit" class="w-full px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold">Sign in</button>
+        <p class="text-[10px] text-slate-500">Demo logins: ayush@gmail.com / password123; officer@nagarnigam.gov.in / admin; ramesh@nagarnigam.gov.in / worker; commissioner@nagarnigam.gov.in / admin.</p>
+      </form>
+      <form id="registerForm" class="hidden mt-4 space-y-3">
+        <label class="block text-xs font-semibold text-slate-700">Full name<input id="registerName" type="text" autocomplete="name" required maxlength="80" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm"></label>
+        <label class="block text-xs font-semibold text-slate-700">Email<input id="registerEmail" type="email" autocomplete="email" required class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm"></label>
+        <label class="block text-xs font-semibold text-slate-700">Phone (optional)<input id="registerPhone" type="tel" autocomplete="tel" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm"></label>
+        <label class="block text-xs font-semibold text-slate-700">Password (at least 8 characters)<input id="registerPassword" type="password" autocomplete="new-password" minlength="8" required class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm"></label>
+        <button type="submit" class="w-full px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold">Create citizen account</button>
+      </form>
+      <p class="text-[10px] leading-relaxed text-slate-400 mt-4">Accounts are saved in this browser only. This standalone demo does not provide server-side account security or sync between devices.</p>
+    </div>
+  </div>
+
+  <!-- Live Camera Modal -->
+  <div id="liveCameraModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative text-white">
+      <button onclick="closeLiveCamera()" class="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full bg-slate-800/80 hover:bg-slate-700">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+      <div class="flex items-center gap-2 mb-3">
+        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+        <h3 class="text-sm font-bold uppercase tracking-wider text-rose-400">Live Camera Viewfinder</h3>
+      </div>
+      <div class="relative overflow-hidden rounded-2xl bg-black border border-slate-800 aspect-video flex items-center justify-center">
+        <video id="liveCameraVideo" autoplay playsinline class="w-full h-full object-cover"></video>
+        <div id="cameraFlashOverlay" class="absolute inset-0 bg-white opacity-0 pointer-events-none"></div>
+      </div>
+      <canvas id="liveCameraCanvas" class="hidden"></canvas>
+      <div class="mt-4 flex items-center justify-between gap-3">
+        <button type="button" onclick="switchCameraFacing()" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold flex items-center gap-1.5">
+          <i data-lucide="refresh-cw" class="w-4 h-4 text-emerald-400"></i> Flip Camera
+        </button>
+        <button type="button" onclick="snapPhoto()" class="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/30 flex items-center gap-2">
+          <i data-lucide="camera" class="w-4 h-4"></i> SNAP PHOTO
+        </button>
+        <button type="button" onclick="closeLiveCamera()" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    const STORAGE_KEYS = {
+      USERS: 'swachh_nagar_users',
+      CURRENT_USER: 'swachh_nagar_current_user',
+      AUTH_VERSION: 'swachh_nagar_auth_version',
+      COMPLAINTS: 'swachh_nagar_complaints',
+      SWEEPERS: 'swachh_nagar_sweepers',
+      WARDS: 'swachh_nagar_wards',
+      ACTIVITY_LOG: 'swachh_nagar_activity'
+    };
+
+    const INITIAL_WARDS = [
+      { id: 'W-01', name: 'Ward 1 - Hazratganj / Central Zone', officer: 'Er. Anil Verma', phone: '0522-220011', lat: 26.8524, lng: 80.9421 },
+      { id: 'W-02', name: 'Ward 2 - Shanti Nagar / North Zone', officer: 'Dr. Meena Kapoor', phone: '0522-220022', lat: 26.8720, lng: 80.9310 },
+      { id: 'W-03', name: 'Ward 3 - Gandhi Chowk / South Zone', officer: 'Shri Sanjay Yadav', phone: '0522-220033', lat: 26.8340, lng: 80.9250 },
+      { id: 'W-04', name: 'Ward 4 - Civil Lines / East Zone', officer: 'Dr. Rajesh Sharma', phone: '0522-220044', lat: 26.8610, lng: 80.9580 },
+      { id: 'W-05', name: 'Ward 5 - Subhash Nagar / West Zone', officer: 'Er. Rohit Tiwari', phone: '0522-220055', lat: 26.8450, lng: 80.9120 }
+    ];
+
+    const INITIAL_SWEEPERS = [
+      { id: 'SW-101', name: 'Ramesh Kumar', phone: '+91 94150 11223', wardId: 'W-04', wardName: 'Ward 4 - Civil Lines', vehicle: 'Auto Tipper (UP-32-BW-4821)', status: 'Available', tasksCompleted: 48, rating: 4.8 },
+      { id: 'SW-102', name: 'Sita Devi', phone: '+91 94150 33445', wardId: 'W-02', wardName: 'Ward 2 - Shanti Nagar', vehicle: 'Compactor Van (UP-32-CV-1092)', status: 'On Duty', tasksCompleted: 62, rating: 4.9 }
+    ];
+
+    const INITIAL_USERS = [
+      { id: 'USR-01', name: 'Ayush Gupta', email: 'ayush@gmail.com', password: 'password123', phone: '9876543210', role: 'citizen', ward: 'Ward 4 - Civil Lines' },
+      { id: 'USR-02', name: 'Dr. Rajesh Sharma', email: 'officer@nagarnigam.gov.in', password: 'admin', phone: '0522-220044', role: 'officer', ward: 'Ward 4 - Civil Lines' },
+      { id: 'USR-03', name: 'Ramesh Kumar', email: 'ramesh@nagarnigam.gov.in', password: 'worker', phone: '+91 94150 11223', role: 'sweeper', ward: 'Ward 4 - Civil Lines' },
+      { id: 'USR-04', name: 'Municipal Commissioner', email: 'commissioner@nagarnigam.gov.in', password: 'admin', phone: '0522-221100', role: 'admin' }
+    ];
+
+    const SAMPLE_PHOTOS = {
+      overflowing_bin: 'https://images.unsplash.com/photo-1605600659873-d808a13e4d2a?auto=format&fit=crop&w=700&q=80',
+      street_garbage: 'https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&w=700&q=80',
+      plastic_dump: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=700&q=80',
+      cleaned_street: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=700&q=80'
+    };
+
+    class Store {
+      constructor() {
+        if (!localStorage.getItem(STORAGE_KEYS.WARDS)) localStorage.setItem(STORAGE_KEYS.WARDS, JSON.stringify(INITIAL_WARDS));
+        if (!localStorage.getItem(STORAGE_KEYS.SWEEPERS)) localStorage.setItem(STORAGE_KEYS.SWEEPERS, JSON.stringify(INITIAL_SWEEPERS));
+        if (!localStorage.getItem(STORAGE_KEYS.USERS)) localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(INITIAL_USERS));
+        if (localStorage.getItem(STORAGE_KEYS.AUTH_VERSION) !== '1') {
+          localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+          localStorage.setItem(STORAGE_KEYS.AUTH_VERSION, '1');
+        }
+        if (!localStorage.getItem(STORAGE_KEYS.COMPLAINTS)) {
+          localStorage.setItem(STORAGE_KEYS.COMPLAINTS, JSON.stringify([{
+            id: 'NN-2026-8492', citizenName: 'Ayush Gupta', citizenPhone: '9876543210',
+            wardId: 'W-04', wardName: 'Ward 4 - Civil Lines', wasteType: 'Overflowing Community Dustbin',
+            severity: 'High', address: 'Near Civil Lines Metro Station Gate 2',
+            description: 'The green community dumpster has been overflowing for the last 48 hours.',
+            photoBefore: SAMPLE_PHOTOS.overflowing_bin, photoAfter: null, status: 'Sweeper Dispatched',
+            createdAt: new Date().toISOString(), assignedOfficer: 'Dr. Rajesh Sharma',
+            assignedSweeperName: 'Ramesh Kumar', sweeperPhone: '+91 94150 11223', lat: 26.8615, lng: 80.9575
+          }]));
+        }
+      }
+      getUsers() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]'); }
+      getCurrentUser() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.CURRENT_USER) || 'null'); }
+      setCurrentUser(user) {
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+        window.dispatchEvent(new CustomEvent('auth:change', { detail: user }));
+      }
+      getComplaints() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.COMPLAINTS) || '[]'); }
+      getComplaintById(id) { return this.getComplaints().find(c => c.id.toLowerCase() === id.toLowerCase().trim()); }
+      saveComplaint(c) {
+        const list = this.getComplaints(); list.unshift(c);
+        localStorage.setItem(STORAGE_KEYS.COMPLAINTS, JSON.stringify(list));
+        window.dispatchEvent(new CustomEvent('complaints:update', { detail: c }));
+        window.dispatchEvent(new CustomEvent('complaints:created', { detail: c }));
+      }
+      updateComplaint(id, updates) {
+        const list = this.getComplaints();
+        const idx = list.findIndex(c => c.id === id);
+        if (idx !== -1) {
+          list[idx] = { ...list[idx], ...updates };
+          localStorage.setItem(STORAGE_KEYS.COMPLAINTS, JSON.stringify(list));
+          window.dispatchEvent(new CustomEvent('complaints:update', { detail: list[idx] }));
+        }
+      }
+      getWards() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.WARDS) || '[]'); }
+      getSweepers() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.SWEEPERS) || '[]'); }
+      resetDemoData() { localStorage.clear(); window.location.reload(); }
+    }
+    window.appStore = new Store();
+
+    // Live Camera Functionality
+    let cameraStream = null;
+    let currentFacingMode = 'environment';
+
+    async function openLiveCamera(target = 'citizen') {
+      const modal = document.getElementById('liveCameraModal');
+      const video = document.getElementById('liveCameraVideo');
+      modal.dataset.cameraTarget = target;
+      modal.classList.remove('hidden'); modal.classList.add('flex');
+      try {
+        if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
+        video.srcObject = cameraStream;
+        video.play();
+      } catch (err) {
+        alert('Could not open the camera: ' + err.message + '. Please allow camera access and use HTTPS or localhost.');
+        closeLiveCamera();
+      }
+    }
+
+    function switchCameraFacing() {
+      currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+      openLiveCamera(document.getElementById('liveCameraModal').dataset.cameraTarget || 'citizen');
+    }
+
+    function snapPhoto() {
+      const video = document.getElementById('liveCameraVideo');
+      const canvas = document.getElementById('liveCameraCanvas');
+      const modal = document.getElementById('liveCameraModal');
+      const target = modal.dataset.cameraTarget || 'citizen';
+      const sourceWidth = video.videoWidth || 640;
+      const sourceHeight = video.videoHeight || 480;
+      const scale = target.startsWith('sweeper-') ? Math.min(1, 1280 / Math.max(sourceWidth, sourceHeight)) : 1;
+      canvas.width = Math.round(sourceWidth * scale);
+      canvas.height = Math.round(sourceHeight * scale);
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      const snapshot = canvas.toDataURL('image/jpeg', target.startsWith('sweeper-') ? 0.72 : 0.85);
+      if (target.startsWith('sweeper-')) {
+        const parts = target.split(':');
+        Complaints.attachSweeperPhoto(parts[1], parts[0] === 'sweeper-before' ? 'photoBeforeCleaning' : 'photoAfterCleaning', snapshot);
+      } else {
+        Complaints.setPhotoPreview(snapshot);
+      }
+      closeLiveCamera();
+    }
+
+    function closeLiveCamera() {
+      if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+      const modal = document.getElementById('liveCameraModal');
+      modal.classList.add('hidden'); modal.classList.remove('flex');
+    }
+
+    // GPS is the only source of report coordinates and address.
+    let reportGpsReady = false;
+    function fetchRealGpsLocation() {
+      const btn = document.getElementById('detectLocationBtn');
+      const address = document.getElementById('reportAddress');
+      const status = document.getElementById('liveGpsStatus');
+      reportGpsReady = false;
+      document.getElementById('reportLat').value = '';
+      document.getElementById('reportLng').value = '';
+      address.value = ''; address.placeholder = 'Getting your GPS location…';
+      if (status) { status.classList.remove('hidden'); status.textContent = 'Requesting GPS permission…'; }
+      if (btn) { btn.disabled = true; btn.innerHTML = 'Getting GPS…'; }
+      if (!navigator.geolocation) {
+        if (status) status.textContent = 'GPS is not supported by this browser.';
+        if (btn) { btn.disabled = false; btn.innerHTML = '📍 Retry GPS'; } return;
+      }
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+        document.getElementById('reportLat').value = String(lat);
+        document.getElementById('reportLng').value = String(lng);
+        address.value = 'GPS coordinates: ' + lat.toFixed(6) + ', ' + lng.toFixed(6);
+        try {
+          const url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lng);
+          const res = await fetch(url);
+          if (res.ok) { const data = await res.json(); if (data.display_name) address.value = data.display_name; }
+        } catch (e) { /* Keep GPS coordinates if reverse lookup is unavailable. */ }
+        reportGpsReady = true; address.placeholder = "";
+        if (status) status.textContent = 'GPS locked (±' + Math.round(pos.coords.accuracy) + ' m).';
+        if (btn) { btn.disabled = false; btn.innerHTML = '✓ GPS Locked'; }
+      }, (err) => {
+        address.placeholder = 'GPS permission is required to report waste';
+        if (status) status.textContent = 'Could not get GPS: ' + err.message + '. Allow location access and retry.';
+        if (btn) { btn.disabled = false; btn.innerHTML = '📍 Retry GPS'; }
+      }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+    }
+
+    // Complaints Controller
+    const Complaints = {
+      selectedPhoto: null,
+      init() {
+        this.populateWards();
+        const wardFilter = document.getElementById('filterOfficerWard');
+        window.appStore.getWards().forEach((ward) => {
+          const option = document.createElement('option');
+          option.value = ward.id;
+          option.textContent = ward.name;
+          wardFilter.appendChild(option);
+        });
+        document.getElementById('reportWasteForm').addEventListener('submit', (e) => { e.preventDefault(); this.submit(); });
+        document.getElementById('officerComplaintsTableBody').addEventListener('click', (e) => {
+          const button = e.target.closest('button[data-action]');
+          if (!button) return;
+          if (button.dataset.action === 'dispatch') this.dispatchToSweeper(button.dataset.complaintId);
+        });
+        document.getElementById('sweeperTasksContainer').addEventListener('click', (e) => {
+          const button = e.target.closest('button[data-action]');
+          if (!button) return;
+          if (button.dataset.action === 'resolve') this.markResolved(button.dataset.complaintId);
+          if (button.dataset.action === 'photo-before') openLiveCamera('sweeper-before:' + button.dataset.complaintId);
+          if (button.dataset.action === 'photo-after') openLiveCamera('sweeper-after:' + button.dataset.complaintId);
+        });
+        window.addEventListener('complaints:update', () => {
+          this.renderOfficerComplaintsTable();
+          this.renderSweeperTasks();
+          if (Tracking.activeComplaintId) {
+            const updated = window.appStore.getComplaintById(Tracking.activeComplaintId);
+            if (updated) Tracking.loadDetails(updated);
+          }
+        });
+        this.renderOfficerComplaintsTable();
+        this.renderSweeperTasks();
+      },
+      populateWards() {
+        const wards = window.appStore.getWards();
+        const sel = document.getElementById('reportWard');
+        sel.innerHTML = wards.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+      },
+      escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[char]);
+      },
+      renderOfficerComplaintsTable() {
+        const body = document.getElementById('officerComplaintsTableBody');
+        if (!body) return;
+        const user = window.appStore.getCurrentUser();
+        if (!user || !['officer', 'admin'].includes(user.role)) {
+          body.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-sm text-slate-500">Switch to the Ward Officer or Admin role to review reports.</td></tr>';
+          return;
+        }
+        const wardId = document.getElementById('filterOfficerWard').value;
+        const statusFilter = document.getElementById('filterOfficerStatus').value;
+        const complaints = window.appStore.getComplaints().filter((item) => {
+          const status = String(item.status || '').toLowerCase();
+          const matchesWard = wardId === 'all' || item.wardId === wardId;
+          const matchesStatus = statusFilter === 'all' ||
+            (statusFilter === 'pending' && status === 'pending verification') ||
+            (statusFilter === 'dispatched' && status === 'sweeper dispatched') ||
+            (statusFilter === 'resolved' && status === 'resolved');
+          return matchesWard && matchesStatus;
+        });
+        if (!complaints.length) {
+          body.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-sm text-slate-500">No reports match these filters.</td></tr>';
+          return;
+        }
+        body.innerHTML = complaints.map((item) => {
+          const id = this.escapeHtml(item.id);
+          const status = String(item.status || 'Pending Verification');
+          const action = status === 'Pending Verification'
+            ? '<button type="button" data-action="dispatch" data-complaint-id="' + id + '" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">Verify &amp; Dispatch</button>'
+            : (status === 'Sweeper Dispatched' ? '<span class="text-xs text-slate-500">Awaiting crew completion</span>' : '<span class="text-xs text-emerald-700 font-semibold">Completed</span>');
+          return '<tr class="text-xs text-slate-700">' +
+            '<td class="py-3 px-4 font-mono font-bold">' + id + '</td>' +
+            '<td class="py-3 px-4">' + this.escapeHtml(item.wasteType) + '<div class="text-[10px] text-slate-400 mt-1">' + this.escapeHtml(item.address) + '</div></td>' +
+            '<td class="py-3 px-4">' + this.escapeHtml(item.wardName) + '<div class="text-[10px] text-slate-400 mt-1">' + this.escapeHtml(item.citizenName) + '</div></td>' +
+            '<td class="py-3 px-4">' + this.escapeHtml(item.severity) + '</td>' +
+            '<td class="py-3 px-4"><span class="px-2 py-1 rounded-full bg-slate-100 text-slate-700">' + this.escapeHtml(status) + '</span></td>' +
+            '<td class="py-3 px-4">' + this.escapeHtml(item.assignedSweeperName || '—') + '</td>' +
+            '<td class="py-3 px-4 text-right">' + action + '</td></tr>';
+        }).join('');
+      },
+      dispatchToSweeper(id) {
+        const user = window.appStore.getCurrentUser();
+        if (!user || !['officer', 'admin'].includes(user.role)) { alert('Only a Ward Officer or Admin can dispatch reports.'); return; }
+        const complaint = window.appStore.getComplaintById(id);
+        if (!complaint || complaint.status !== 'Pending Verification') return;
+        const sweepers = window.appStore.getSweepers();
+        const sweeper = sweepers.find((worker) => worker.wardId === complaint.wardId && worker.status === 'Available') ||
+          sweepers.find((worker) => worker.wardId === complaint.wardId) || sweepers.find((worker) => worker.status === 'Available') || sweepers[0];
+        if (!sweeper) { alert('No sweeper is available to assign.'); return; }
+        window.appStore.updateComplaint(id, {
+          status: 'Sweeper Dispatched',
+          assignedOfficer: user.name,
+          assignedSweeperName: sweeper.name,
+          sweeperPhone: sweeper.phone,
+          dispatchedAt: new Date().toISOString()
+        });
+      },
+      renderSweeperTasks() {
+        const container = document.getElementById('sweeperTasksContainer');
+        if (!container) return;
+        const user = window.appStore.getCurrentUser();
+        if (!user || user.role !== 'sweeper') {
+          container.innerHTML = '<div class="bg-white rounded-xl border border-slate-200 p-5 text-sm text-slate-500">Switch the Demo role to Sweeper to view the crew’s assigned tasks.</div>';
+          return;
+        }
+        const tasks = window.appStore.getComplaints().filter((item) => item.status === 'Sweeper Dispatched' && item.assignedSweeperName === user.name);
+        if (!tasks.length) {
+          container.innerHTML = '<div class="bg-white rounded-xl border border-slate-200 p-5 text-sm text-slate-500">No open pickup tasks are assigned to this crew.</div>';
+          return;
+        }
+        container.innerHTML = tasks.map((item) => {
+          const id = this.escapeHtml(item.id);
+          const before = typeof item.photoBeforeCleaning === 'string' && item.photoBeforeCleaning.startsWith('data:image/');
+          const after = typeof item.photoAfterCleaning === 'string' && item.photoAfterCleaning.startsWith('data:image/');
+          const beforePhoto = before ? '<img src="' + item.photoBeforeCleaning + '" alt="Before cleaning" class="mt-3 h-32 w-full object-cover rounded-lg border border-slate-200">' : '<p class="mt-3 text-xs text-slate-400">No before photo captured yet.</p>';
+          const afterPhoto = after ? '<img src="' + item.photoAfterCleaning + '" alt="After cleaning" class="mt-3 h-32 w-full object-cover rounded-lg border border-slate-200">' : '<p class="mt-3 text-xs text-slate-400">No after photo captured yet.</p>';
+          return '<article class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">' +
+            '<div class="flex flex-wrap items-start justify-between gap-3"><div><h3 class="font-bold text-slate-900">' + id + ' · ' + this.escapeHtml(item.wasteType) + '</h3>' +
+            '<p class="text-xs text-slate-500 mt-1">' + this.escapeHtml(item.address) + '</p><p class="text-xs text-slate-500 mt-1">Ward: ' + this.escapeHtml(item.wardName) + ' · Assigned to: ' + this.escapeHtml(item.assignedSweeperName) + '</p></div></div>' +
+            '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">' +
+            '<div class="rounded-xl border border-slate-200 p-3"><p class="text-xs font-bold text-slate-700">Before cleaning</p>' + beforePhoto + '<button type="button" data-action="photo-before" data-complaint-id="' + id + '" class="mt-3 px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold">' + (before ? 'Retake Before Photo' : 'Take Before Photo') + '</button></div>' +
+            '<div class="rounded-xl border border-slate-200 p-3"><p class="text-xs font-bold text-slate-700">After cleaning</p>' + afterPhoto + '<button type="button" data-action="photo-after" data-complaint-id="' + id + '" ' + (before ? '' : 'disabled') + ' class="mt-3 px-3 py-2 rounded-lg ' + (before ? 'bg-sky-600 hover:bg-sky-700' : 'bg-slate-300 cursor-not-allowed') + ' text-white text-xs font-bold">' + (after ? 'Retake After Photo' : 'Take After Photo') + '</button></div>' +
+            '</div><p class="text-[11px] text-slate-500 mt-3">Both photos must be taken with the live camera. File uploads are not available.</p>' +
+            '<button type="button" data-action="resolve" data-complaint-id="' + id + '" ' + (before && after ? '' : 'disabled') + ' class="mt-4 px-3 py-2 rounded-lg ' + (before && after ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-300 cursor-not-allowed') + ' text-white text-xs font-bold">Mark Collection Complete</button></article>';
+        }).join('');
+      },
+      attachSweeperPhoto(id, field, photoData) {
+        const user = window.appStore.getCurrentUser();
+        const complaint = window.appStore.getComplaintById(id);
+        if (!user || user.role !== 'sweeper' || !complaint || complaint.status !== 'Sweeper Dispatched') {
+          alert('Only the assigned Sweeper Crew can add photos to an open task.');
+          return;
+        }
+        if (complaint.assignedSweeperName !== user.name) {
+          alert('This task is assigned to another crew.');
+          return;
+        }
+        if (!['photoBeforeCleaning', 'photoAfterCleaning'].includes(field) || !photoData.startsWith('data:image/')) return;
+        window.appStore.updateComplaint(id, { [field]: photoData });
+      },
+      markResolved(id) {
+        const user = window.appStore.getCurrentUser();
+        if (!user || user.role !== 'sweeper') { alert('Only the assigned Sweeper Crew can complete this task.'); return; }
+        const complaint = window.appStore.getComplaintById(id);
+        if (!complaint || complaint.status !== 'Sweeper Dispatched') return;
+        if (complaint.assignedSweeperName !== user.name) { alert('This task is assigned to another crew.'); return; }
+        if (!complaint.photoBeforeCleaning || !complaint.photoBeforeCleaning.startsWith('data:image/') ||
+            !complaint.photoAfterCleaning || !complaint.photoAfterCleaning.startsWith('data:image/')) {
+          alert('Take both the before-cleaning and after-cleaning photos with the camera first.');
+          return;
+        }
+        window.appStore.updateComplaint(id, { status: 'Resolved', resolvedAt: new Date().toISOString() });
+      },
+      setPhotoPreview(url) {
+        this.selectedPhoto = url;
+        document.getElementById('photoPreviewImg').src = url;
+        document.getElementById('photoPreviewContainer').classList.remove('hidden');
+        document.getElementById('photoUploadPrompt').classList.add('hidden');
+      },
+      clearPhotoPreview() {
+        this.selectedPhoto = null;
+        document.getElementById('photoPreviewContainer').classList.add('hidden');
+        document.getElementById('photoUploadPrompt').classList.remove('hidden');
+      },
+      submit() {
+        const user = window.appStore.getCurrentUser();
+        if (!user) { alert('Sign in or create an account before submitting a report.'); Auth.openAuthModal('login'); return; }
+        if (!this.selectedPhoto || !this.selectedPhoto.startsWith('data:image/')) { alert('Take a photo with the live camera before submitting.'); return; }
+        if (!reportGpsReady || !document.getElementById('reportLat').value || !document.getElementById('reportLng').value) { alert('GPS location is required. Allow location access and wait for GPS to lock.'); return; }
+        const wardId = document.getElementById('reportWard').value;
+        const ward = window.appStore.getWards().find(w => w.id === wardId);
+        const comp = {
+          id: 'NN-2026-' + Math.floor(1000 + Math.random() * 9000),
+          citizenName: user ? user.name : 'Ayush Gupta',
+          citizenPhone: user ? user.phone : '9876543210',
+          wardId, wardName: ward.name,
+          wasteType: document.getElementById('reportWasteType').value,
+          severity: document.querySelector('input[name="severity"]:checked')?.value || 'Medium',
+          address: document.getElementById('reportAddress').value,
+          description: document.getElementById('reportDescription').value,
+          photoBefore: this.selectedPhoto,
+          photoAfter: null,
+          status: 'Pending Verification',
+          createdAt: new Date().toISOString(),
+          assignedOfficer: ward.officer,
+          lat: Number(document.getElementById('reportLat').value),
+          lng: Number(document.getElementById('reportLng').value)
+        };
+        window.appStore.saveComplaint(comp);
+        alert(`Grievance ${comp.id} successfully registered with Nagar Nigam!`);
+        window.app.navigateTo('tracking');
+        Tracking.loadDetails(comp);
+      }
+    };
+
+    // Admin analytics are calculated from the same localStorage complaint records as the rest of the demo.
+    const AdminAnalytics = {
+      chart: null,
+      map: null,
+      markers: null,
+      init() {
+        document.getElementById('exportReportBtn').addEventListener('click', () => this.exportCsv());
+        document.getElementById('btnResetDemoData').addEventListener('click', () => {
+          if (this.requireAdmin() && confirm('Reset all locally saved demo data and reload the app?')) window.appStore.resetDemoData();
+        });
+        window.addEventListener('complaints:update', () => {
+          if (window.app?.currentView === 'admin') this.render();
+        });
+      },
+      requireAdmin() {
+        const user = window.appStore.getCurrentUser();
+        if (!user || user.role !== 'admin') {
+          alert('Switch the role selector to Municipal Commissioner (Admin) to use this action.');
+          return false;
+        }
+        return true;
+      },
+      escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[char]);
+      },
+      render() {
+        const complaints = window.appStore.getComplaints();
+        const user = window.appStore.getCurrentUser();
+        const notice = document.getElementById('adminAccessNotice');
+        if (notice) {
+          notice.textContent = user?.role === 'admin' ? '' : 'Dashboard actions are for the Municipal Commissioner (Admin). Use the role selector to switch to Admin.';
+          notice.classList.toggle('hidden', user?.role === 'admin');
+        }
+        const normalizedStatus = (item) => String(item.status || '').trim().toLowerCase();
+        const resolved = complaints.filter((item) => normalizedStatus(item) === 'resolved').length;
+        const dispatched = complaints.filter((item) => normalizedStatus(item) === 'sweeper dispatched').length;
+        const pending = complaints.filter((item) => normalizedStatus(item) === 'pending verification').length;
+        document.getElementById('kpiTotalComplaints').textContent = complaints.length;
+        document.getElementById('kpiResolvedComplaints').textContent = resolved;
+        document.getElementById('kpiInProgressComplaints').textContent = dispatched;
+        document.getElementById('kpiPendingComplaints').textContent = pending;
+
+        const weights = complaints.map((item) => Number(item.wasteTons)).filter((value) => Number.isFinite(value) && value >= 0);
+        const weightValue = weights.length ? weights.reduce((total, value) => total + value, 0).toFixed(1) + ' MT' : '—';
+        document.getElementById('kpiWasteTons').textContent = weightValue;
+        const ratings = complaints.map((item) => Number(item.citizenRating ?? item.rating)).filter((value) => Number.isFinite(value) && value >= 1 && value <= 5);
+        document.getElementById('kpiSatisfactionRating').textContent = ratings.length
+          ? (ratings.reduce((total, value) => total + value, 0) / ratings.length).toFixed(1) + ' ★'
+          : 'N/A';
+
+        this.renderChart(complaints, pending, dispatched, resolved);
+        this.renderMap(complaints);
+      },
+      renderChart(complaints, pending, dispatched, resolved) {
+        const canvas = document.getElementById('statusDoughnutChart');
+        const empty = document.getElementById('adminChartEmpty');
+        if (!window.Chart) {
+          canvas.classList.add('hidden');
+          empty.textContent = 'Chart library could not load. Check your internet connection and refresh.';
+          empty.classList.remove('hidden');
+          return;
+        }
+        canvas.classList.remove('hidden');
+        empty.textContent = complaints.length ? '' : 'No complaint data yet.';
+        empty.classList.toggle('hidden', complaints.length > 0);
+        const other = Math.max(0, complaints.length - pending - dispatched - resolved);
+        const data = [pending, dispatched, resolved, other];
+        if (!this.chart) {
+          this.chart = new Chart(canvas, {
+            type: 'doughnut',
+            data: {
+              labels: ['Pending Verification', 'Sweeper Dispatched', 'Resolved', 'Other'],
+              datasets: [{ data, backgroundColor: ['#f43f5e', '#0284c7', '#10b981', '#94a3b8'], borderColor: '#ffffff', borderWidth: 3 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '64%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 10 } } } } }
+          });
+        } else {
+          this.chart.data.datasets[0].data = data;
+          this.chart.update();
+        }
+      },
+      renderMap(complaints) {
+        const element = document.getElementById('adminGisMap');
+        if (!window.L) {
+          element.innerHTML = '<div class="h-full flex items-center justify-center p-6 text-center text-sm text-slate-500">Map library could not load. Check your internet connection and refresh.</div>';
+          return;
+        }
+        if (!this.map) {
+          this.map = L.map(element).setView([26.85, 80.94], 12);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          }).addTo(this.map);
+          this.markers = L.featureGroup().addTo(this.map);
+        }
+        this.markers.clearLayers();
+        const points = complaints.filter((item) => Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lng)) &&
+          Math.abs(Number(item.lat)) <= 90 && Math.abs(Number(item.lng)) <= 180);
+        points.forEach((item) => {
+          const status = String(item.status || 'Unknown');
+          const color = status === 'Resolved' ? '#059669' : status === 'Sweeper Dispatched' ? '#0284c7' : '#e11d48';
+          const marker = L.circleMarker([Number(item.lat), Number(item.lng)], { radius: 8, color, fillColor: color, fillOpacity: 0.75, weight: 2 });
+          marker.bindPopup('<strong>' + this.escapeHtml(item.id) + '</strong><br>' + this.escapeHtml(item.wasteType) + '<br>' +
+            this.escapeHtml(status) + '<br>' + this.escapeHtml(item.address));
+          this.markers.addLayer(marker);
+        });
+        if (points.length) {
+          const bounds = this.markers.getBounds();
+          this.map.fitBounds(bounds, { padding: [24, 24], maxZoom: 15 });
+        }
+        setTimeout(() => this.map && this.map.invalidateSize(), 0);
+      },
+      exportCsv() {
+        if (!this.requireAdmin()) return;
+        const complaints = window.appStore.getComplaints();
+        const columns = ['Ticket ID', 'Status', 'Waste Issue', 'Severity', 'Ward', 'Reporter', 'Address', 'Latitude', 'Longitude', 'Assigned Officer', 'Assigned Sweeper', 'Weight (MT)', 'Rating', 'Created At'];
+        const rows = complaints.map((item) => [item.id, item.status, item.wasteType, item.severity, item.wardName, item.citizenName,
+          item.address, item.lat, item.lng, item.assignedOfficer, item.assignedSweeperName, item.wasteTons, item.citizenRating ?? item.rating, item.createdAt]);
+        const csv = [columns, ...rows].map((row) => row.map((value) => '"' + String(value ?? '').replace(/"/g, '""') + '"').join(',')).join('\r\n');
+        const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'swachh-nagar-complaints.csv';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+    };
+
+    const ReuseAdvisor = {
+      modelPromise: null,
+      init() {
+        document.getElementById('reuseComplaintSelect').addEventListener('change', () => {
+          this.showSelectedReport();
+          this.analyzeSelectedReport();
+        });
+        document.getElementById('analyzeReportedPhotoBtn').addEventListener('click', () => this.analyzeSelectedReport());
+        window.addEventListener('complaints:update', (event) => {
+          const selectedId = document.getElementById('reuseComplaintSelect').value;
+          this.refreshReports(!selectedId || !window.appStore.getComplaintById(selectedId));
+        });
+        window.addEventListener('complaints:created', () => this.refreshReports(true));
+        this.refreshReports(true);
+      },
+      refreshReports(selectNewest = false) {
+        const select = document.getElementById('reuseComplaintSelect');
+        const previousId = selectNewest ? '' : select.value;
+        const complaints = window.appStore.getComplaints();
+        select.replaceChildren();
+        if (!complaints.length) {
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = 'No reports submitted yet';
+          select.appendChild(option);
+          select.disabled = true;
+          this.showSelectedReport();
+          return;
+        }
+        complaints.forEach((item) => {
+          const option = document.createElement('option');
+          option.value = item.id;
+          const date = item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '';
+          option.textContent = item.id + ' · ' + (item.wasteType || 'Waste report') + (date ? ' · ' + date : '');
+          select.appendChild(option);
+        });
+        select.disabled = false;
+        select.value = complaints.some((item) => item.id === previousId) ? previousId : complaints[0].id;
+        this.showSelectedReport();
+      },
+      showSelectedReport() {
+        const complaint = window.appStore.getComplaintById(document.getElementById('reuseComplaintSelect').value);
+        const preview = document.getElementById('reuseDetectionPreview');
+        const button = document.getElementById('analyzeReportedPhotoBtn');
+        const result = document.getElementById('reuseDetectionResult');
+        result.classList.add('hidden');
+        if (!complaint || !complaint.photoBefore) {
+          preview.removeAttribute('src');
+          preview.classList.add('hidden');
+          button.disabled = true;
+          this.setStatus('No report photo is available yet. Submit a waste report with a camera photo on page 1 first.');
+          return;
+        }
+        preview.src = complaint.photoBefore;
+        preview.classList.remove('hidden');
+        const cameraPhoto = typeof complaint.photoBefore === 'string' && complaint.photoBefore.startsWith('data:image/');
+        button.disabled = !cameraPhoto;
+        this.setStatus(cameraPhoto
+          ? 'Showing the photo attached to report ' + complaint.id + '. Select “Suggest reuse” to analyze this photo.'
+          : 'This older report has a sample image rather than a camera photo, so it cannot be analyzed. New reports use camera photos.');
+      },
+      async analyzeSelectedReport() {
+        const complaint = window.appStore.getComplaintById(document.getElementById('reuseComplaintSelect').value);
+        const preview = document.getElementById('reuseDetectionPreview');
+        if (!complaint || !String(complaint.photoBefore || '').startsWith('data:image/')) {
+          this.setStatus('Choose a report with a camera photo from page 1 first.');
+          return;
+        }
+        try {
+          if (!preview.complete || !preview.naturalWidth) await preview.decode();
+          await this.analyze(preview);
+        } catch (error) {
+          this.setStatus('Could not load the selected report photo. Choose the report again and retry.');
+        }
+      },
+      guides: {
+        bottle: {
+          title: 'Bottle',
+          use: 'If it is a clean plastic bottle, reuse it as a small flower pot or a watering bottle. A clean glass bottle can be reused as a vase.',
+          steps: 'For a plastic planter, wash it, ask an adult to make drainage holes and smooth or cover any cut edge. Do not cut glass bottles.'
+        },
+        cup: {
+          title: 'Cup',
+          use: 'An intact, clean cup can become a pencil holder, small planter or desk organizer.',
+          steps: 'Reuse only if it is clean and unchipped. Do not use a cracked cup for food or drink.'
+        },
+        bowl: {
+          title: 'Bowl',
+          use: 'An intact bowl can be reused as a storage tray, plant pot cover or organizer.',
+          steps: 'Clean it first; keep chipped or sharp pieces out of reuse and sort them using local waste guidance.'
+        },
+        vase: {
+          title: 'Vase',
+          use: 'A sound vase can be cleaned and reused for flowers, branches or desk storage.',
+          steps: 'If cracked or broken, wrap it safely and follow your local residual-waste instructions.'
+        },
+        book: {
+          title: 'Book',
+          use: 'A readable book can be shared, donated to a library or school, or passed to someone else.',
+          steps: 'If it is too damaged to read, ask a local paper recycler whether it accepts that paper type.'
+        },
+        chair: {
+          title: 'Chair',
+          use: 'A usable chair can be repaired, repainted, donated or passed on instead of discarded.',
+          steps: 'Check that it is stable and safe before reuse.'
+        },
+        handbag: {
+          title: 'Bag',
+          use: 'A usable bag can be cleaned, repaired and used again, or donated.',
+          steps: 'If it cannot be reused, check whether your local textile collection accepts it.'
+        },
+        backpack: {
+          title: 'Backpack',
+          use: 'A usable backpack can be repaired, donated or passed on.',
+          steps: 'Wash or clean it according to its care label before passing it on.'
+        },
+        'cell phone': {
+          title: 'Mobile phone',
+          use: 'If working, repair, reuse or donate it. If broken, send it to an authorized e-waste collection point.',
+          steps: 'Do not dismantle the device or place it in household bins. Remove personal data before handing it on.'
+        },
+        keyboard: {
+          title: 'Keyboard',
+          use: 'A working keyboard can be reused or donated; a broken one belongs with authorized e-waste collection.',
+          steps: 'Keep it out of ordinary bins and do not dismantle it at home.'
+        },
+        mouse: {
+          title: 'Computer mouse',
+          use: 'A working mouse can be reused or donated. A broken one should go to authorized e-waste collection.',
+          steps: 'Keep batteries separate and follow the collection instructions for each material.'
+        },
+        remote: {
+          title: 'Remote control',
+          use: 'A working remote can be reused. If broken, take it to an authorized e-waste collection point.',
+          steps: 'Remove batteries and place them in a separate battery collection stream.'
+        },
+        tv: {
+          title: 'Television / screen',
+          use: 'A working set can be repaired, reused or donated. A broken set requires authorized e-waste collection.',
+          steps: 'Do not break the screen or put electronic equipment in ordinary bins.'
+        },
+        'wine glass': {
+          title: 'Glassware',
+          use: 'Intact glassware can be washed and reused as a drinking glass or small vase.',
+          steps: 'Do not cut glass. Wrap broken glass safely and check local collection directions.'
+        }
+      },
+      escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[char]);
+      },
+      setStatus(message) {
+        const status = document.getElementById('reuseDetectionStatus');
+        status.textContent = message;
+        status.classList.toggle('hidden', !message);
+      },
+      async analyze(image) {
+        const preview = document.getElementById('reuseDetectionPreview');
+        const result = document.getElementById('reuseDetectionResult');
+        result.classList.add('hidden');
+        this.setStatus('Loading the object detector and checking the photo… The first scan may take a little longer.');
+        if (!window.cocoSsd) {
+          this.setStatus('The object detector could not load. Check your internet connection, then refresh and try again.');
+          return;
+        }
+        try {
+          if (!this.modelPromise) this.modelPromise = window.cocoSsd.load({ base: 'lite_mobilenet_v2' });
+          const model = await this.modelPromise;
+          const predictions = await model.detect(image, 10, 0.35);
+          if (!predictions.length) {
+            this.setStatus('The detector could not confidently identify an object. Try a clear photo of one item, or use the waste guide on page 6.');
+            return;
+          }
+          const best = predictions[0];
+          const guide = this.guides[best.class];
+          if (!guide) {
+            this.setStatus('The detector recognized an object, but this page does not have a safe reuse suggestion for it yet. Check its waste category on page 6.');
+            result.innerHTML = '<article class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950"><h3 class="font-bold">Detected: ' + this.escapeHtml(best.class) + ' (' + Math.round(best.score * 100) + '% confidence)</h3><p class="text-sm mt-2">Do not assume an item is reusable based on appearance alone. Use the waste sorter or check with your local collection service.</p><button type="button" onclick="window.app.navigateTo(\'awareness\')" class="mt-3 underline text-sm font-semibold">Open the waste sorter</button></article>';
+            result.classList.remove('hidden');
+            return;
+          }
+          this.setStatus('Detected ' + guide.title + ' with ' + Math.round(best.score * 100) + '% confidence. Check the material and condition before reusing it.');
+          result.innerHTML = '<article class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950"><p class="text-[10px] font-bold uppercase tracking-wider opacity-70">Reuse idea</p><h3 class="text-lg font-black mt-1">' + this.escapeHtml(guide.title) + '</h3><p class="text-sm mt-2">' + this.escapeHtml(guide.use) + '</p><p class="text-xs mt-3"><strong>How to reuse safely:</strong> ' + this.escapeHtml(guide.steps) + '</p><p class="text-[10px] mt-3 opacity-70">This is an object guess, not material identification. Confirm the item yourself; if unsure, follow local waste collection guidance.</p></article>';
+          result.classList.remove('hidden');
+        } catch (error) {
+          this.modelPromise = null;
+          this.setStatus('Could not analyze this photo. Check your connection and try again with a clearer picture.');
+        }
+      }
+    };
+
+    const WasteClassifier = {
+      entries: [
+        {
+          category: 'Wet / organic waste', bin: 'Green wet-waste bin', color: 'emerald',
+          examples: ['food scraps', 'food waste', 'cooked food', 'leftover food', 'fruit peel', 'fruit peels', 'banana peel', 'banana peels', 'orange peel', 'vegetable peel', 'vegetable peels', 'eggshell', 'eggshells', 'tea leaves', 'tea bag', 'coffee grounds', 'flowers', 'garden leaves', 'dry leaves', 'grass clippings', 'meat bones', 'fish waste'],
+          guidance: 'Keep food and garden waste separate. It can be sent for composting or other local organic-waste processing.'
+        },
+        {
+          category: 'Dry recyclable waste', bin: 'Blue dry-waste bin', color: 'sky',
+          examples: ['newspaper', 'office paper', 'cardboard', 'pizza box', 'paper carton', 'plastic bottle', 'plastic bottles', 'plastic container', 'plastic bag', 'plastic packaging', 'milk pouch', 'milk carton', 'tetra pak', 'metal can', 'aluminium can', 'aluminum can', 'steel can', 'glass bottle', 'glass bottles', 'glass jar', 'glass jars', 'clean glass', 'old clothes', 'textiles'],
+          guidance: 'Keep it dry and reasonably clean. Follow local collection instructions for materials your area accepts.'
+        },
+        {
+          category: 'Domestic hazardous / special waste', bin: 'Separate collection; do not put in ordinary bins', color: 'violet',
+          examples: ['battery', 'batteries', 'button cell', 'mobile phone', 'cell phone', 'laptop', 'charger', 'electronic waste', 'e waste', 'cfl', 'tube light', 'fluorescent bulb', 'light bulb', 'bulb', 'paint', 'paint can', 'pesticide', 'chemical', 'medicine', 'expired medicine', 'syringe', 'needle', 'sharp waste'],
+          guidance: 'Keep it separate and hand it to a designated municipal collection point or authorized handler. Never put loose batteries, chemicals, medicines or sharps in recycling.'
+        },
+        {
+          category: 'Residual / sanitary waste', bin: 'Wrap safely and follow local residual-waste collection', color: 'slate',
+          examples: ['diaper', 'nappy', 'sanitary pad', 'menstrual pad', 'soiled tissue', 'paper towel', 'broken ceramic', 'broken cup', 'broken mirror', 'broken glass', 'dust', 'sweepings', 'soiled wrapper', 'food wrapper'],
+          guidance: 'This item is generally not suitable for ordinary recycling. Wrap sharp or soiled items securely and use the collection route specified by your municipality.'
+        },
+        {
+          category: 'Construction and demolition waste', bin: 'Separate bulk-waste collection', color: 'amber',
+          examples: ['brick', 'rubble', 'concrete', 'construction debris', 'demolition debris', 'tile', 'broken tile', 'cement debris', 'malba'],
+          guidance: 'Keep rubble separate from household waste and arrange collection through your local construction-waste service.'
+        }
+      ],
+      init() {
+        const input = document.getElementById('wasteItemSearch');
+        document.getElementById('wasteItemSearchBtn').addEventListener('click', () => this.lookup());
+        input.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') { event.preventDefault(); this.lookup(); }
+        });
+        document.querySelectorAll('[data-waste-example]').forEach((button) => {
+          button.addEventListener('click', () => {
+            input.value = button.dataset.wasteExample;
+            this.lookup();
+          });
+        });
+      },
+      normalize(value) {
+        return String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      },
+      escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[char]);
+      },
+      lookup() {
+        const input = document.getElementById('wasteItemSearch');
+        const result = document.getElementById('wasteLookupResult');
+        const query = this.normalize(input.value);
+        result.classList.remove('hidden');
+        if (!query) {
+          result.innerHTML = '<div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Type a waste item first, such as “banana peel” or “battery.”</div>';
+          input.focus();
+          return;
+        }
+        const ranked = this.entries.flatMap((entry) => entry.examples.map((example) => ({ entry, example, term: this.normalize(example) })))
+          .sort((a, b) => b.term.length - a.term.length);
+        const match = ranked.find((item) => query === item.term || query.includes(item.term));
+        if (!match) {
+          result.innerHTML = '<div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"><strong>We could not match “' + this.escapeHtml(input.value.trim()) + '”.</strong><p class="mt-1">Check the spelling or ask your local Nagar Nigam which separate collection route to use. Keep batteries, chemicals, medicines, bulbs and sharps out of ordinary bins.</p></div>';
+          return;
+        }
+        const entry = match.entry;
+        const colors = {
+          emerald: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+          sky: 'border-sky-200 bg-sky-50 text-sky-900',
+          violet: 'border-violet-200 bg-violet-50 text-violet-900',
+          slate: 'border-slate-200 bg-slate-50 text-slate-900',
+          amber: 'border-amber-200 bg-amber-50 text-amber-900'
+        };
+        result.innerHTML = '<article class="rounded-xl border p-4 ' + colors[entry.color] + '">' +
+          '<div class="flex flex-wrap items-start justify-between gap-2"><div><p class="text-[10px] font-bold uppercase tracking-wider opacity-70">Recommended category</p><h4 class="text-lg font-black mt-1">' + this.escapeHtml(entry.category) + '</h4></div>' +
+          '<span class="px-2.5 py-1 rounded-full bg-white/70 text-xs font-bold">' + this.escapeHtml(entry.bin) + '</span></div>' +
+          '<p class="text-sm mt-3"><strong>Item:</strong> ' + this.escapeHtml(input.value.trim()) + '</p>' +
+          '<p class="text-sm mt-2">' + this.escapeHtml(entry.guidance) + '</p>' +
+          '<p class="text-[11px] mt-3 opacity-75">Local collection rules may differ; follow your Nagar Nigam’s instructions.</p></article>';
+      }
+    };
+
+    const Auth = {
+      async passwordHash(password, saltHex) {
+        if (!window.crypto?.subtle) throw new Error('Secure password storage is not available in this browser. Open the app through HTTPS or localhost.');
+        const salt = saltHex ? Uint8Array.from(saltHex.match(/.{2}/g), (part) => parseInt(part, 16)) : window.crypto.getRandomValues(new Uint8Array(16));
+        const key = await window.crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+        const bits = await window.crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' }, key, 256);
+        const hash = Array.from(new Uint8Array(bits), (byte) => byte.toString(16).padStart(2, '0')).join('');
+        const saltValue = saltHex || Array.from(salt, (byte) => byte.toString(16).padStart(2, '0')).join('');
+        return saltValue + ':' + hash;
+      },
+      async verifyPassword(password, storedHash) {
+        const parts = String(storedHash || '').split(':');
+        if (parts.length !== 2) return false;
+        const candidate = await this.passwordHash(password, parts[0]);
+        return candidate === storedHash;
+      },
+      init() {
+        document.getElementById('loginForm').addEventListener('submit', (event) => { event.preventDefault(); this.login(); });
+        document.getElementById('registerForm').addEventListener('submit', (event) => { event.preventDefault(); this.register(); });
+        document.getElementById('authShowLogin').addEventListener('click', () => this.showMode('login'));
+        document.getElementById('authShowRegister').addEventListener('click', () => this.showMode('register'));
+        document.getElementById('authCloseBtn').addEventListener('click', () => this.closeModal());
+        document.getElementById('authModal').addEventListener('click', (event) => { if (event.target.id === 'authModal') this.closeModal(); });
+        document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
+        document.getElementById('demoRoleSwitcher').addEventListener('change', (event) => this.switchRole(event.target.value));
+        window.addEventListener('auth:change', () => {
+          this.renderSession();
+          Complaints.renderOfficerComplaintsTable();
+          Complaints.renderSweeperTasks();
+          if (window.app?.currentView === 'admin') AdminAnalytics.render();
+        });
+        this.renderSession();
+      },
+      renderSession() {
+        const user = window.appStore.getCurrentUser();
+        const roleNames = { citizen: 'Citizen Portal', officer: 'Ward Officer', sweeper: 'Sweeper Crew', admin: 'Municipal Commissioner' };
+        document.getElementById('navUserName').textContent = user?.name || 'Guest';
+        document.getElementById('navUserRole').textContent = user ? (roleNames[user.role] || 'User') : 'Not signed in';
+        const logout = document.getElementById('logoutBtn');
+        logout.classList.toggle('hidden', !user);
+        const roleWrapper = document.getElementById('demoRoleWrapper');
+        roleWrapper.classList.toggle('hidden', !user);
+        const roleSwitcher = document.getElementById('demoRoleSwitcher');
+        roleSwitcher.disabled = !user;
+        roleSwitcher.value = user?.role || 'citizen';
+        const accountButton = document.getElementById('accountButton');
+        accountButton.querySelector('span').textContent = user ? user.name : 'Sign in';
+        accountButton.title = user ? 'Signed in. Log out to switch accounts.' : 'Sign in or create an account';
+        accountButton.disabled = Boolean(user);
+        accountButton.classList.toggle('opacity-60', Boolean(user));
+      },
+      switchRole(role) {
+        const allowedRoles = ['citizen', 'sweeper', 'officer', 'admin'];
+        const user = window.appStore.getCurrentUser();
+        if (!user || !allowedRoles.includes(role)) return;
+        const accountName = user.accountName || user.name;
+        const accountPhone = user.accountPhone ?? user.phone ?? '';
+        const rolePersona = role === 'citizen' ? null : window.appStore.getUsers().find((item) => item.role === role);
+        window.appStore.setCurrentUser({
+          ...user,
+          accountName,
+          accountPhone,
+          accountRole: user.accountRole || user.role,
+          role,
+          name: rolePersona?.name || accountName,
+          phone: rolePersona?.phone || accountPhone
+        });
+      },
+      openAuthModal(mode = 'login') {
+        this.showMode(mode);
+        const modal = document.getElementById('authModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        if (window.lucide) window.lucide.createIcons();
+        document.getElementById(mode === 'register' ? 'registerName' : 'loginEmail').focus();
+      },
+      closeModal() {
+        const modal = document.getElementById('authModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        this.setMessage('');
+      },
+      showMode(mode) {
+        const register = mode === 'register';
+        document.getElementById('loginForm').classList.toggle('hidden', register);
+        document.getElementById('registerForm').classList.toggle('hidden', !register);
+        document.getElementById('authModalTitle').textContent = register ? 'Create a citizen account' : 'Sign in';
+        document.getElementById('authShowLogin').className = 'px-3 py-1.5 rounded-lg text-xs font-bold ' + (!register ? 'bg-emerald-100 text-emerald-800' : 'text-slate-600');
+        document.getElementById('authShowRegister').className = 'px-3 py-1.5 rounded-lg text-xs font-bold ' + (register ? 'bg-emerald-100 text-emerald-800' : 'text-slate-600');
+        this.setMessage('');
+      },
+      setMessage(message, isError = true) {
+        const element = document.getElementById('authMessage');
+        element.textContent = message;
+        element.classList.toggle('hidden', !message);
+        element.className = 'mt-3 rounded-lg p-3 text-xs ' + (isError ? 'bg-rose-50 text-rose-800' : 'bg-emerald-50 text-emerald-800') + (message ? '' : ' hidden');
+      },
+      saveUsers(users) {
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+      },
+      async login() {
+        const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+        const password = document.getElementById('loginPassword').value;
+        const users = window.appStore.getUsers();
+        const index = users.findIndex((item) => String(item.email).toLowerCase() === email);
+        if (index < 0) { this.setMessage('No account was found for that email and password.'); return; }
+        const user = users[index];
+        try {
+          let valid = user.passwordHash ? await this.verifyPassword(password, user.passwordHash) : user.password === password;
+          if (!valid) { this.setMessage('No account was found for that email and password.'); return; }
+          if (!user.passwordHash) {
+            user.passwordHash = await this.passwordHash(password);
+            delete user.password;
+            this.saveUsers(users);
+          }
+          const safeUser = { id: user.id, name: user.name, accountName: user.name, email: user.email, phone: user.phone || '', accountPhone: user.phone || '', role: user.role, accountRole: user.role, ward: user.ward || '' };
+          window.appStore.setCurrentUser(safeUser);
+          document.getElementById('loginForm').reset();
+          this.closeModal();
+        } catch (error) {
+          this.setMessage(error.message || 'Could not sign in. Please try again.');
+        }
+      },
+      async register() {
+        const name = document.getElementById('registerName').value.trim();
+        const email = document.getElementById('registerEmail').value.trim().toLowerCase();
+        const phone = document.getElementById('registerPhone').value.trim();
+        const password = document.getElementById('registerPassword').value;
+        if (name.length < 2) { this.setMessage('Enter your full name.'); return; }
+        if (password.length < 8) { this.setMessage('Choose a password with at least 8 characters.'); return; }
+        const users = window.appStore.getUsers();
+        if (users.some((item) => String(item.email).toLowerCase() === email)) { this.setMessage('An account already exists for that email. Sign in instead.'); return; }
+        try {
+          const user = {
+            id: 'USR-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7),
+            name, email, phone, role: 'citizen', passwordHash: await this.passwordHash(password)
+          };
+          users.push(user);
+          this.saveUsers(users);
+          window.appStore.setCurrentUser({ id: user.id, name: user.name, accountName: user.name, email: user.email, phone: user.phone, accountPhone: user.phone, role: user.role, accountRole: user.role });
+          document.getElementById('registerForm').reset();
+          this.closeModal();
+        } catch (error) {
+          this.setMessage(error.message || 'Could not create the account. Please try again.');
+        }
+      },
+      logout() {
+        window.appStore.setCurrentUser(null);
+        if (window.app?.currentView === 'admin') AdminAnalytics.render();
+      }
+    };
+
+    // Tracking
+    const Tracking = {
+      activeComplaintId: null,
+      init() {
+        document.getElementById('trackingSearchForm').onsubmit = (e) => {
+          e.preventDefault();
+          const q = document.getElementById('trackingSearchInput').value.trim();
+          const c = window.appStore.getComplaintById(q);
+          if (c) this.loadDetails(c); else alert('Complaint not found.');
+        };
+        const list = window.appStore.getComplaints();
+        if (list.length > 0) this.loadDetails(list[0]);
+      },
+      loadDetails(c) {
+        this.activeComplaintId = c.id;
+        document.getElementById('trackingDetailContainer').innerHTML = `
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+              <div>
+                <h3 class="font-bold text-lg text-slate-800">${c.id}</h3>
+                <p class="text-xs text-slate-500">${c.wasteType} &bull; ${c.wardName}</p>
+              </div>
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">${c.status}</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <img src="${c.photoBefore}" class="w-full h-44 object-cover rounded-xl border border-slate-200" />
+              <div class="text-xs space-y-2">
+                <p><strong>Address:</strong> ${c.address}</p>
+                <p><strong>Officer Assigned:</strong> ${c.assignedOfficer || 'Zonal Officer'}</p>
+                <p><strong>Sweeper Crew:</strong> ${c.assignedSweeperName || 'En route / Allocating'}</p>
+                <p class="bg-slate-50 p-3 rounded-lg border"><em>"${c.description}"</em></p>
+              </div>
+            </div>
+            ${(c.photoBeforeCleaning || c.photoAfterCleaning) ? '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 pt-4">' +
+              (c.photoBeforeCleaning ? '<figure><figcaption class="text-xs font-bold text-slate-600 mb-2">Before cleaning</figcaption><img src="' + c.photoBeforeCleaning + '" alt="Before cleaning" class="w-full h-44 object-cover rounded-xl border border-slate-200"></figure>' : '') +
+              (c.photoAfterCleaning ? '<figure><figcaption class="text-xs font-bold text-slate-600 mb-2">After cleaning</figcaption><img src="' + c.photoAfterCleaning + '" alt="After cleaning" class="w-full h-44 object-cover rounded-xl border border-slate-200"></figure>' : '') +
+              '</div>' : ''}
+          </div>
+        `;
+      }
+    };
+
+    // App Initializer
+    class App {
+      constructor() { this.currentView = 'report'; }
+      init() {
+        Complaints.init();
+        AdminAnalytics.init();
+        ReuseAdvisor.init();
+        WasteClassifier.init();
+        Tracking.init();
+        Auth.init();
+        document.querySelectorAll('[data-view-target]').forEach(b => {
+          b.onclick = () => this.navigateTo(b.dataset.viewTarget);
+        });
+        this.navigateTo('report');
+        fetchRealGpsLocation();
+        if (window.lucide) window.lucide.createIcons();
+      }
+      navigateTo(viewId) {
+        this.currentView = viewId;
+        document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
+        const el = document.getElementById(`view-${viewId}`);
+        if (el) el.classList.remove('hidden');
+        if (viewId === 'admin') AdminAnalytics.render();
+        if (viewId === 'recycling') ReuseAdvisor.analyzeSelectedReport();
+        if (window.lucide) window.lucide.createIcons();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      window.app = new App();
+      window.app.init();
+    });
+  </script>
+</body>
+</html>
